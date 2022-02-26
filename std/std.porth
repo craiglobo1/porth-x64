@@ -1,0 +1,179 @@
+sysport  
+    "CreateFileA" 
+    "ReadFile"
+    "WriteFile"
+    "CloseHandle"
+    "SetFilePointer"
+    "SetEndOfFile"
+from "kernel32"
+
+const sizeof(int)  8 end
+const sizeof(ptr)  8 end
+const sizeof(bool) 1 end
+
+proc lor bool bool -- bool in
+    <int> swap <int> bor <bool>
+end
+proc land bool bool -- bool in
+    <int> swap <int> band <bool>
+end
+
+proc lnot bool -- bool in
+    if false else true end
+end
+
+proc incBy int ptr in
+    let by ptr1 in ptr1 @ptr by + ptr1 !int end
+end
+
+proc isNumericChar int -- bool in
+    let c in c '0' 1 - > c '9' 1 + < land end
+end
+
+proc isNumeric ptr -- bool in
+    dup @8 '-' = if 
+        1 ptr+
+    end
+    let s in
+        true 0 while s over ptr+ @8 0 != do
+            s over ptr+ @8 isNumericChar lnot if 
+                swap drop false swap
+            end
+            1 +
+        end drop
+    end
+end
+
+
+// proc atoi ptr bool -- int in
+//     let s in
+//         true 0 while s over ptr+ @8 0 != do
+//             s over ptr+ @8 isNumericChar if
+//                 s over ptr+ @8 '0' - 
+//             else
+//                 swap drop false swap
+//             end 
+//             1 +
+//         end drop
+//     end
+// end
+
+proc streq ptr ptr -- bool in
+    let s1 s2 in
+        s1 strlen s2 strlen = if
+            1 <bool> 0 while s1 over ptr+ @8 0 != do
+                s1 over ptr+ @8   s2 2over ptr+ @8 != if 
+                    swap drop 0 <bool> swap
+                end
+                1 +
+            end drop
+        else
+            0 <bool>
+        end
+    end
+end
+
+proc append ptr ptr in
+    let s1 s2 in
+        s1 strlen s2 strlen
+        let n1 n2 in
+            n2 s2 s1 n1 ptr+ memcpy
+        end
+    end
+end
+
+proc free int ptr in
+    let size mem in
+        size 4 divmod drop while dup 0 > do
+            0 over 1 - 4 * mem swap ptr+ !32
+            1 -
+        end drop
+        // i
+        size 4 divmod swap drop while dup 0 > do
+            size over - mem swap ptr+ 0 swap !8
+            1 -
+        end drop
+    end
+end
+
+proc cdump int in
+    memory buf 2 end
+    buf !8
+    buf stdout
+end
+
+
+// base val
+proc pow int int -- int in
+    dup 0 != if 
+        over swap
+        while dup 1 > do
+            swap 2over * swap 
+            1 -
+        end drop swap drop
+    else
+        drop drop 1
+    end
+end
+
+proc fopen int ptr -- int in
+    let cw filename in
+        0 FILE_ATTRIBUTE_NORMAL cw 0 
+        FILE_SHARE_WRITE 
+        GENERIC_WRITE GENERIC_READ bor 
+        filename [CreateFileA] 7
+    end
+end
+
+proc fpnt ptr int in
+    let s fh in
+        0 0 s dup strlen swap fh [WriteFile] 5 drop
+    end
+end
+
+proc fread int ptr int -- bool in
+    memory NoOfBytesRead sizeof(int) end
+    let size buffer fh in
+        0 NoOfBytesRead size buffer fh [ReadFile] 5
+        0 = buffer <int> 0 = lor
+    end
+end
+
+proc set_fp int int int -- int in
+    let start dist fh in
+        start 0 dist fh [SetFilePointer] 4
+    end
+end
+
+proc fclose int in
+    [CloseHandle] 1 drop
+end
+
+proc truncate int in
+    let fh in
+        FILE_BEGIN 0 fh set_fp drop
+        fh [SetEndOfFile] 1 drop
+    end
+end
+
+proc read_line ptr int -- bool in
+    memory charBuf 2 end
+    let buf fh in
+        1 charBuf fh fread drop
+        true 0 while charBuf @char '\n' != do
+            charBuf @char buf 2over ptr+ !char 
+            1 charBuf fh fread
+            let a b c in c lnot b end
+            1 +
+        end drop
+    end
+end
+
+
+proc isEof int -- bool in
+    memory charBuf 1 end
+    let fh in
+        1 charBuf fh fread
+        FILE_CURRENT -1 fh set_fp drop
+    end
+end

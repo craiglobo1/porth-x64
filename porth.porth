@@ -1,0 +1,83 @@
+include "windows.porth"
+include "std.porth"
+
+// max sizes
+const TK_SIZE 50 end
+const MAX_FILE_SIZE 12 1000 * end
+
+// operand struct
+const Op.type sizeof(int) offset end
+// const op.token sizeof(ptr) offset end
+const Op.operand sizeof(int) offset end
+const sizeof(Op) reset end
+
+// ops enum
+const OP_PUSH_INT 1 offset end
+const OP_DUMP 1 offset end
+const NO_OF_OPS reset end
+
+
+// token struct
+const Token.type sizeof(int) offset end
+const Token.text TK_SIZE offset end
+const sizeof(Token) reset end
+
+
+// token enum
+const TK_WORD 1 offset end
+const TK_INT 1 offset end
+const NO_OF_TK_TYPS reset end 
+
+// Arrays
+memory program     sizeof(Op) 1000 * end
+memory program_len sizeof(int)       end
+
+memory file_text MAX_FILE_SIZE end
+
+proc parse_tok 
+    ptr // text ptr
+    ptr // buffer
+--
+    ptr // new text ptr
+in
+    let tok buf in
+        0 while tok over ptr+ @char ' ' != do
+
+            1 +
+        end
+        dup tok buf memcpy
+        tok swap ptr+ 
+    end
+end
+
+proc seek_till_space ptr -- ptr in
+    let text in
+        0 while text over ptr+ @char dup ' ' = swap '\0' != land do
+            1 +
+        end
+        text swap ptr+
+    end
+end
+
+proc lex_file ptr in
+    memory tok_text TK_SIZE end
+    OPEN_EXISTING swap fopen
+    let fh in
+        MAX_FILE_SIZE file_text fh fread drop
+        // file_text stdout
+
+        file_text while dup @char '\0' != do
+            tok_text parse_tok
+            tok_text stdout
+            TK_SIZE tok_text free
+            "\n" stdout
+            seek_till_space
+            // dup stdout
+            // "\n" stdout
+        end drop
+        
+        fh fclose
+    end
+end
+
+"math.porth" lex_file
